@@ -30,17 +30,17 @@ migrate = Migrate(app, db)
 # Models.
 #----------------------------------------------------------------------------#
 
-
+#TODO add required attributes
 class Venue(db.Model):
     __tablename__ = 'Venue'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column("genres", db.ARRAY(db.String(120)))
+    name = db.Column(db.String, nullable=False)
+    city = db.Column(db.String(120), nullable=False)
+    state = db.Column(db.String(120), nullable=False)
+    address = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(120), nullable=False)
+    genres = db.Column("genres", db.ARRAY(db.String(120)), nullable=False)
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean)
@@ -52,11 +52,11 @@ class Artist(db.Model):
     __tablename__ = 'Artist'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column("genres", db.ARRAY(db.String(120)))
+    name = db.Column(db.String, nullable=False)
+    city = db.Column(db.String(120), nullable=False)
+    state = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(120), nullable=False)
+    genres = db.Column("genres", db.ARRAY(db.String(120)), nullable=False)
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(50))
@@ -67,8 +67,8 @@ class Show(db.Model):
     __tablename__ = 'Show'
 
     id = db.Column(db.Integer, primary_key=True)
-    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'))
-    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'))
+    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
+    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
     start_time = db.Column(db.DateTime)
 
 
@@ -154,9 +154,9 @@ def getUpcomingShowsForArtist(shows):
 def index():
     return render_template('pages/home.html')
 
-
+#----------------------------------------------------------------------------#
 #  Venues
-#  ----------------------------------------------------------------
+#----------------------------------------------------------------------------#
 
 @app.route('/venues')
 def venues():
@@ -177,17 +177,17 @@ def venues():
 
         shows = Show.query.filter_by(venue_id=venue.id).all()
 
-    for show in shows:
-        if show.start_time > datetime.now():
-            numShowsUpcoming += 1
+        for show in shows:
+            if show.start_time > datetime.now():
+                numShowsUpcoming += 1
 
-    for entry in data:
-        if venue.city == entry['city'] and venue.state == entry['state']:
-            entry['venues'].append({
-                "id": venue.id,
-                "name": venue.name,
-                "num_upcoming_shows": numShowsUpcoming
-            })
+        for entry in data:
+            if venue.city == entry['city'] and venue.state == entry['state']:
+                entry['venues'].append({
+                    "id": venue.id,
+                    "name": venue.name,
+                    "num_upcoming_shows": numShowsUpcoming
+                })
     return render_template('pages/venues.html', areas=data)
 
 
@@ -214,7 +214,6 @@ def search_venues():
 def show_venue(venue_id):
     venue = Venue.query.get(venue_id)
     shows = Show.query.filter_by(venue_id=venue_id)
-
     data = {
         "id": venue.id,
         "name": venue.name,
@@ -234,6 +233,7 @@ def show_venue(venue_id):
         "upcoming_shows_count": len(getUpcomingShowsForVenue(shows))
     }
     return render_template('pages/show_venue.html', venue=data)
+
 
 #  Create Venue
 #  ----------------------------------------------------------------
@@ -279,8 +279,8 @@ def create_venue_submission():
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
+    venue = Venue.query.get(venue_id)
     try:
-        venue = Venue.query.get(venue_id)
         db.session.delete(venue)
         db.session.commit()
         flash('Venue' + venue.venue_id + ' was successfully deleted.')
@@ -379,8 +379,8 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
+    form = ArtistForm()
     try:
-        form = ArtistForm()
         artist = Artist.query.filter_by(id=artist_id).first()
 
         artist = {
@@ -410,7 +410,7 @@ def edit_artist_submission(artist_id):
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
     form = VenueForm()
-    venue = venue.query.filter_by(id=venue_id).first()
+    venue = Venue.query.filter_by(id=venue_id).first()
 
     data = {
         "id": venue.id,
@@ -431,8 +431,8 @@ def edit_venue(venue_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
+    form = VenueForm()
     try:
-        form = VenueForm()
         venue = Venue.query.filter_by(id=venue_id).first()
 
         venue = {
@@ -539,7 +539,7 @@ def create_show_submission():
         db.session.add(show)
         db.session.commit()
         print('success')
-        flash('Venue ' + form.artist_id +
+        flash('Venue ' + form.artist_id.data +
               ' was successfully listed!')
     except:
         flash('An error occurred. Venue ' +
